@@ -1,17 +1,6 @@
-import numpy as np
-from ast import literal_eval
-from enum import Enum
+import re
 
-#Returns int representation of action
-def getNum(letter):
-    if letter == 'U':
-        return 0
-    elif letter == 'D':
-        return 1
-    elif letter == 'L':
-        return 2
-    elif letter == 'R':
-        return 3
+import numpy as np
 
 def get_file_contents(path):
     file = open(path, 'r')
@@ -22,29 +11,51 @@ def get_file_contents(path):
 def parse_experiences(path_to_experiences):
     return path_to_experiences.split(';')
 
-#Returns updated q and k
-def do_learning(experiences, q, k, discount_factor):
-    n_iter = len(experiences) // 3 #integer division (floors result)
+#convert string coord "(x,y)" into list of int
+def convert_coord(string):
+    temp = re.findall(r'\d+', string)
+    temp = list(map(int, temp))
+    zerobase = [x - 1 for x in temp] #subtract 1 from each coord to account for 0-based indexing in arr
+    return zerobase
+
+#convert string dir "U/D/L/R" with enum
+def convert_dir(string):
+    match string.strip(): #remove whitespace at front/back
+        case "U":
+            return UP
+        case "D":
+            return DOWN
+        case "L":
+            return LEFT
+        case "R":
+            return RIGHT
+        case _:
+            return None
+
+
+def do_learning(experiences, Q, K, discount_factor):
+    n_iter = len(experiences) // 3
     for i in range(n_iter):
         offset = 3 * i
-        if offset + 4 >= len(experiences):#if we are missing one of s,a,r,s',a'
+        if offset + 4 >= len(experiences):#if we dont have enough inputs
             break
-        s,a,r,s2,a2 = (literal_eval(experiences[offset]), getNum(experiences[offset + 1].strip()), float(experiences[offset + 2]),
-                       literal_eval(experiences[offset + 3]), getNum(experiences[offset + 4].strip()))
+        s,a,r,s2,a2 = experiences[offset], experiences[offset + 1], experiences[offset + 2], experiences[offset + 3], experiences[offset + 4]
 
-        # adjusts index
-        s = (s[0] - 1, s[1] - 1)
-        s2 = (s2[0] - 1, s2[1] - 1)
-        computeQ(s, a, r, s2, a2, q, k, discount_factor)
-    # flips grids vertically
-    return np.flipud(q), np.flipud(k)
+        # convert from strings to appropriate type
+        s = convert_coord(s)
+        a = convert_dir(a)
+        r = int(r)
+        s2 = convert_coord(s2)
+        a2 = convert_dir(a2)
 
-#Note that this function assumes (0,0) as top left
-def computeQ(s,a,r,s2,a2, q, k, disc_f):
+        computeQ(s, a, r, s2, a2, Q, K, discount_factor)
+
+def computeQ(s,a,r,s2,a2, Q, K, disc_f):
     (x,y), (x2,y2) = s, s2
-    k[x, y, a] += 1
-    alpha = 1/(k[x,y,a])
-    q[x,y,a] = q[x,y,a] + alpha * (r + disc_f*(q[x2,y2,a2]) - q[x,y,a])
+    K[x, y, a] = K[x, y, a] + 1
+    alpha = 1/(K[x,y,a])
+    Q[x,y,a] = Q[x,y,a] + alpha * (r + disc_f*(Q[x2,y2,a2]) - Q[x,y,a])
+
 
 # These are provided by the autograder, do not overwrite them
 UP, DOWN, LEFT, RIGHT, discount_factor = 0, 1, 2, 3, 0.3643
@@ -61,25 +72,13 @@ if (debug_mode):
     Q = np.zeros((11,11,4))
     K = np.zeros((11,11,4))
     experiences_file_contents = get_file_contents(path_to_experiences)
+    # print(type(arr[0]),arr[0],type(arr[1]),arr[1])
     experiences = parse_experiences(experiences_file_contents)
+    do_learning(experiences, Q, K, discount_factor)
+    print(Q[0,0,RIGHT], K[0,0,RIGHT]) # (1,1) RIGHT
 
-    # playing with array index (just for experimenting)
-    # Q[10,2,3] = 46
-    # Q[10,1,3] = 21
-    # Q[0,4,3] = 20
-    # Q_r = Q[:,:,3]
-    # print(Q)
-    # print(Q_r)
-    # Q_flip = np.flip(Q, 0)
-    # Q_flip_r = Q_flip[:,:,3]
-    # print(Q_flip)
-    # print(Q_flip_r)
 
-    #Calling the functions
-    Q, K = do_learning(experiences, Q, K, discount_factor)
-    print('Q:\n', Q)
-    print('K:\n', K)
-
+#
 # experiences = parse_experiences(experiences_file_contents)
-# Q,K = do_learning(experiences, Q, K, discount_factor)
+# do_learning(experiences, Q, K, discount_factor)
 
