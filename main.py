@@ -47,13 +47,13 @@ def computeQ(s,a,r,s2,a2, q, k, disc_f):
     q[x,y,a] = q[x,y,a] + alpha * (r + disc_f*(q[x2,y2,a2]) - q[x,y,a])
 
 # These are provided by the autograder, do not overwrite them
-UP, DOWN, LEFT, RIGHT, discount_factor = 0, 1, 2, 3, 0.3643
+# UP, DOWN, LEFT, RIGHT, discount_factor = 0, 1, 2, 3, 0.3643
 # # These will depend on if you running locally or uploading your final answers
 # Q, K, experiences_file_contents
 
 # ===============================
 # ⚠️ COMMENT THIS OUT BEFORE UPLOADING ⚠️
-debug_mode = True
+# debug_mode = True
 # ===============================
 
 if (debug_mode):
@@ -80,6 +80,6 @@ if (debug_mode):
     print('Q:\n', Q)
     print('K:\n', K)
 
-# experiences = parse_experiences(experiences_file_contents)
-# Q,K = do_learning(experiences, Q, K, discount_factor)
+experiences = parse_experiences(experiences_file_contents)
+Q,K = do_learning(experiences, Q, K, discount_factor)
 
